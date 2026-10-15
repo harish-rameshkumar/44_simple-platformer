@@ -12,6 +12,12 @@ GREEN = (0, 200, 0)
 BLACK = (0, 0, 0)
 
 MAX_FALL_SPEED = 15
+# Difficulty settings: (gravity, jump strength)
+DIFFICULTIES = {
+    pygame.K_1: ("Easy", 0.5, -13),
+    pygame.K_2: ("Medium", 0.6, -12),
+    pygame.K_3: ("Hard", 0.7, -11),
+}
 GAME_OVER_INPUT_DELAY = 30  # frames to ignore keys so held keys don't dismiss the screen
 
 class GameEngine:
@@ -44,10 +50,21 @@ class GameEngine:
     def handle_event(self, event):
         if self.game_over:
             if event.type == pygame.KEYDOWN and self.game_over_frames >= GAME_OVER_INPUT_DELAY:
-                pygame.event.post(pygame.event.Event(pygame.QUIT))
+                if event.key in DIFFICULTIES:
+                    self.restart(event.key)
+                elif event.key in (pygame.K_ESCAPE, pygame.K_q):
+                    pygame.event.post(pygame.event.Event(pygame.QUIT))
             return
         if event.type == pygame.KEYDOWN and event.key in (pygame.K_SPACE, pygame.K_UP, pygame.K_w):
             self.player.jump()
+
+    def restart(self, difficulty_key):
+        _, self.gravity, jump_strength = DIFFICULTIES[difficulty_key]
+        self.player = Player(self.start_x, self.start_y)
+        self.player.jump_strength = jump_strength
+        self.score = 0
+        self.game_over = False
+        self.game_over_frames = 0
 
     def handle_input(self):
         keys = pygame.key.get_pressed()
@@ -120,8 +137,10 @@ class GameEngine:
 
             title = self.font.render("Game Over", True, WHITE)
             final = self.font.render(f"Final Score: {self.score}", True, WHITE)
-            prompt = self.font.render("Press any key to exit", True, WHITE)
+            replay = self.font.render("Replay: 1 - Easy   2 - Medium   3 - Hard", True, WHITE)
+            leave = self.font.render("Esc / Q - Exit", True, WHITE)
             cx, cy = self.width // 2, self.height // 2
-            screen.blit(title, title.get_rect(center=(cx, cy - 50)))
-            screen.blit(final, final.get_rect(center=(cx, cy)))
-            screen.blit(prompt, prompt.get_rect(center=(cx, cy + 50)))
+            screen.blit(title, title.get_rect(center=(cx, cy - 70)))
+            screen.blit(final, final.get_rect(center=(cx, cy - 20)))
+            screen.blit(replay, replay.get_rect(center=(cx, cy + 40)))
+            screen.blit(leave, leave.get_rect(center=(cx, cy + 80)))
