@@ -9,8 +9,10 @@ WHITE = (255, 255, 255)
 BROWN = (150, 100, 60)
 RED = (220, 60, 60)
 GREEN = (0, 200, 0)
+BLACK = (0, 0, 0)
 
 MAX_FALL_SPEED = 15
+GAME_OVER_INPUT_DELAY = 30  # frames to ignore keys so held keys don't dismiss the screen
 
 class GameEngine:
     def __init__(self, width, height):
@@ -37,8 +39,13 @@ class GameEngine:
         self.score = 0
         self.font = pygame.font.SysFont("Arial", 30)
         self.game_over = False
+        self.game_over_frames = 0
 
     def handle_event(self, event):
+        if self.game_over:
+            if event.type == pygame.KEYDOWN and self.game_over_frames >= GAME_OVER_INPUT_DELAY:
+                pygame.event.post(pygame.event.Event(pygame.QUIT))
+            return
         if event.type == pygame.KEYDOWN and event.key in (pygame.K_SPACE, pygame.K_UP, pygame.K_w):
             self.player.jump()
 
@@ -52,6 +59,7 @@ class GameEngine:
 
     def update(self):
         if self.game_over:
+            self.game_over_frames += 1
             return
 
         self.player.vy += self.gravity
@@ -105,7 +113,15 @@ class GameEngine:
         score_text = self.font.render(f"Score: {self.score}", True, WHITE)
         screen.blit(score_text, (10, 10))
 
-        if self.game_over and not getattr(self, "_game_over_logged", False):
-            # NOTE: no proper game-over screen yet - see Task 2 in the README.
-            print("Game over! Final score:", self.score)
-            self._game_over_logged = True
+        if self.game_over:
+            overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            overlay.fill((*BLACK, 160))
+            screen.blit(overlay, (0, 0))
+
+            title = self.font.render("Game Over", True, WHITE)
+            final = self.font.render(f"Final Score: {self.score}", True, WHITE)
+            prompt = self.font.render("Press any key to exit", True, WHITE)
+            cx, cy = self.width // 2, self.height // 2
+            screen.blit(title, title.get_rect(center=(cx, cy - 50)))
+            screen.blit(final, final.get_rect(center=(cx, cy)))
+            screen.blit(prompt, prompt.get_rect(center=(cx, cy + 50)))
